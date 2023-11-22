@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uj.entity.Product;
 import com.uj.entity.Users;
 import com.uj.repo.UsersRepo;
+import com.uj.request.AuthRequest;
+import com.uj.util.JWTUtil;
 
 @RestController
 @RequestMapping("/product")
@@ -35,6 +41,12 @@ public class ProductsController {
 	
 	@Autowired
 	private PasswordEncoder encoder;
+	
+	@Autowired
+	private JWTUtil jwtUtil;
+	
+	@Autowired
+	private AuthenticationManager authenticationManager;
 	
 	@GetMapping("/welcome")
 	public ResponseEntity<String> welcome(){
@@ -63,6 +75,20 @@ public class ProductsController {
 			return "User saved";
 		else
 			return "User not saved";
+	}
+	
+	@PostMapping("/generate")
+	public ResponseEntity<String> generateToken(@RequestBody AuthRequest req){
+		Authentication authenticate = authenticationManager.
+		                                             authenticate(new UsernamePasswordAuthenticationToken
+		                                             (req.getUserName(), req.getPassword()));
+		
+		if(authenticate.isAuthenticated()) {
+			return new ResponseEntity<>(jwtUtil.generateToken(req.getUserName()),HttpStatus.OK);
+		}else {
+			 throw new UsernameNotFoundException("invalid user request !");
+		}
+		
 	}
 
 }
